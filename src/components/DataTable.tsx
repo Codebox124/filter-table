@@ -13,6 +13,7 @@ import {
     MenuItem,
     SelectChangeEvent,
     TablePagination,
+    TableSortLabel,
 } from '@mui/material';
 import CountryData from '../data/countryData.json';
 
@@ -30,11 +31,44 @@ const DataTable: React.FC = () => {
     const [hasStatesFilter, setHasStatesFilter] = useState<string>('');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [orderBy, setOrderBy] = useState<string>('');
+    const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
-    const filteredData = CountryData.countries.filter((row: DataRow) =>
-        (row.continent.toLowerCase().includes(continentFilter.toLowerCase()) || continentFilter === '') &&
-        (row.hasStates.toString() === hasStatesFilter || hasStatesFilter === '')
-    );
+    const handleSort = (property: string) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrderBy(property);
+        setOrder(isAsc ? 'desc' : 'asc');
+        
+    };
+
+    const createSortHandler = (property: string) => () => {
+        handleSort(property);
+    };
+
+    const filteredData = CountryData.countries
+        .filter((row: DataRow) =>
+            (row.continent.toLowerCase().includes(continentFilter.toLowerCase()) || continentFilter === '') &&
+            (row.hasStates.toString() === hasStatesFilter || hasStatesFilter === '')
+        )
+        .sort((a: DataRow, b: DataRow) => {
+            if (orderBy === 'nameUn') {
+                return order === 'asc'
+                    ? a.nameUn.localeCompare(b.nameUn)
+                    : b.nameUn.localeCompare(a.nameUn);
+            }
+            if (orderBy === 'continent') {
+                return order === 'asc'
+                    ? a.continent.localeCompare(b.continent)
+                    : b.continent.localeCompare(a.continent);
+            }
+            if (orderBy === 'hasStates') {
+                return order === 'asc'
+                    ? a.hasStates.toString().localeCompare(b.hasStates.toString())
+                    : b.hasStates.toString().localeCompare(a.hasStates.toString());
+            }
+            // Add more sorting logic for other columns if needed
+            return 0;
+        });
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -77,9 +111,33 @@ const DataTable: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Continent</TableCell>
-                            <TableCell>Has States</TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'nameUn'}
+                                    direction={orderBy === 'nameUn' ? order : 'asc'}
+                                    onClick={createSortHandler('nameUn')}
+                                >
+                                    Name
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'continent'}
+                                    direction={orderBy === 'continent' ? order : 'asc'}
+                                    onClick={createSortHandler('continent')}
+                                >
+                                    Continent
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell>
+                                <TableSortLabel
+                                    active={orderBy === 'hasStates'}
+                                    direction={orderBy === 'hasStates' ? order : 'asc'}
+                                    onClick={createSortHandler('hasStates')}
+                                >
+                                    Has States
+                                </TableSortLabel>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
