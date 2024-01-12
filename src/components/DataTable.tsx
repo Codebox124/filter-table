@@ -66,7 +66,7 @@ const DataTable: React.FC = () => {
                     ? a.hasStates.toString().localeCompare(b.hasStates.toString())
                     : b.hasStates.toString().localeCompare(a.hasStates.toString());
             }
-            // Add more sorting logic for other columns if needed
+         
             return 0;
         });
 
