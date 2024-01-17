@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import {
     Table,
     TableBody,
@@ -27,6 +26,16 @@ type DataRow = {
     hasStates: boolean;
 };
 
+const continentCodeMap: Record<string, string> = {
+    'Africa': 'AF',
+    'North America': 'NA',
+    'Oceania': 'OC',
+    'Antarctica': 'AN',
+    'Asia': 'AS',
+    'Europe': 'EU',
+    'South America': 'SA',
+};
+
 const DataTable: React.FC = () => {
     const [continentFilter, setContinentFilter] = useState<string>('');
     const [hasStatesFilter, setHasStatesFilter] = useState<string>('');
@@ -34,12 +43,26 @@ const DataTable: React.FC = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [orderBy, setOrderBy] = useState<string>('');
     const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+    const [allData, setAllData] = useState<DataRow[]>(CountryData.countries);
+
+    const filterContinent = (continent: string) => {
+        setContinentFilter(continent);
+
+        if (continent === "All") {
+            setAllData(CountryData.countries);
+        } else {
+            setAllData(CountryData.countries.filter((row) => row.continent === continentCodeMap[continent]));
+        }
+    };
+
+    const handleContinentChange = (event: SelectChangeEvent<string>) => {
+        filterContinent(event.target.value);
+    };
 
     const handleSort = (property: string) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrderBy(property);
         setOrder(isAsc ? 'desc' : 'asc');
-
     };
 
     const createSortHandler = (property: string) => () => {
@@ -47,28 +70,29 @@ const DataTable: React.FC = () => {
     };
 
     const filteredData = CountryData.countries
-  .filter((row: DataRow) =>
-    (row.continent.toLowerCase().includes(continentFilter.toLowerCase()) || continentFilter === '') &&
-    (row.hasStates.toString() === hasStatesFilter || hasStatesFilter === '')
-  )
-  .filter((row: DataRow) => continentFilter === '' || row.continent === continentFilter);
+        .filter((row: DataRow) =>
+            (row.continent.toLowerCase().includes(continentFilter.toLowerCase()) || continentFilter === '') &&
+            (row.hasStates.toString() === hasStatesFilter || hasStatesFilter === '')
+        )
+        .sort((a: DataRow, b: DataRow) => {
+            if (orderBy === 'nameUn') {
+                return order === 'asc'
+                    ? a.nameUn.localeCompare(b.nameUn)
+                    : b.nameUn.localeCompare(a.nameUn);
+            }
+            if (orderBy === 'continent') {
+                return order === 'asc'
+                    ? a.continent.localeCompare(b.continent)
+                    : b.continent.localeCompare(a.continent);
+            }
+            if (orderBy === 'hasStates') {
+                return order === 'asc'
+                    ? a.hasStates.toString().localeCompare(b.hasStates.toString())
+                    : b.hasStates.toString().localeCompare(a.hasStates.toString());
+            }
 
-const sortedData = filteredData.sort((a: DataRow, b: DataRow) => {
-  if (orderBy === 'nameUn') {
-    return order === 'asc' ? a.nameUn.localeCompare(b.nameUn) : b.nameUn.localeCompare(a.nameUn);
-  }
-  if (orderBy === 'continent') {
-    return order === 'asc' ? a.continent.localeCompare(b.continent) : b.continent.localeCompare(a.continent);
-  }
-  if (orderBy === 'hasStates') {
-    return order === 'asc' ? a.hasStates.toString().localeCompare(b.hasStates.toString()) : b.hasStates.toString().localeCompare(a.hasStates.toString());
-  }
-
-  return 0;
-});
-
-const finalData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
+            return 0;
+        });
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -81,33 +105,23 @@ const finalData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rows
 
     const slicedData = filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-    const handleContinentChange = (event: SelectChangeEvent<string>) => {
-        setContinentFilter(event.target.value);
-    };
-
-    const handleHasStatesChange = (event: SelectChangeEvent<string>) => {
-        setHasStatesFilter(event.target.value);
-    };
-
     return (
         <div>
             <FormControl style={{ minWidth: '200px', margin: '10px' }}>
                 <InputLabel>Continent</InputLabel>
                 <Select value={continentFilter} onChange={handleContinentChange}>
                     <MenuItem value="">All</MenuItem>
-                    <MenuItem value='Africa'>Africa</MenuItem>
-                    <MenuItem value='North-America'>North America</MenuItem>
-                    <MenuItem value='Oceania'>Oceania</MenuItem>
-                    <MenuItem value='Antarctica'>Antarctica</MenuItem>
-                    <MenuItem value='Asia'>Asia</MenuItem>
-                    <MenuItem value='Europe'>Europe</MenuItem>
-                    <MenuItem value='South America'>South America</MenuItem>
+                    {Object.keys(continentCodeMap).map((continent) => (
+                        <MenuItem key={continentCodeMap[continent]} value={continentCodeMap[continent]}>
+                            {continent}
+                        </MenuItem>
+                    ))}
                 </Select>
             </FormControl>
 
             <FormControl style={{ minWidth: '200px', margin: '10px' }}>
                 <InputLabel>Has States</InputLabel>
-                <Select value={hasStatesFilter} onChange={handleHasStatesChange}>
+                <Select value={hasStatesFilter} onChange={(event) => setHasStatesFilter(event.target.value)}>
                     <MenuItem value="">All</MenuItem>
                     <MenuItem value="true">Yes</MenuItem>
                     <MenuItem value="false">No</MenuItem>
@@ -123,7 +137,6 @@ const finalData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rows
                                     active={orderBy === 'nameUn'}
                                     direction={orderBy === 'nameUn' ? order : 'asc'}
                                     onClick={createSortHandler('nameUn')}
-
                                 >
                                     Name
                                 </TableSortLabel>
